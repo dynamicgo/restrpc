@@ -36,5 +36,19 @@ func Read(paramT reflect.Type, reader Reader) (reflect.Value, error) {
 
 func read(path string, paramT reflect.Type, reader Reader) (reflect.Value, error) {
 
+	value, err := newParam(paramT)
+
+	if err != nil {
+		return reflect.Value{}, nil
+	}
+
+	if paramT.Kind() == reflect.Ptr {
+		paramT = paramT.Elem()
+	}
+
+	for i := 0; i < paramT.NumField(); i++ {
+
+	}
+
 	return reflect.Value{}, nil
 }
