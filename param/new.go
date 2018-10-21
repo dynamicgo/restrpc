@@ -35,5 +35,6 @@ func Read(paramT reflect.Type, reader Reader) (reflect.Value, error) {
 }
 
 func read(path string, paramT reflect.Type, reader Reader) (reflect.Value, error) {
+
 	return reflect.Value{}, nil
 }
