@@ -8,31 +8,27 @@ import (
 type A struct {
 }
 
-type param struct {
+type Param struct {
 }
 
-type result struct {
+type Result struct {
 }
 
-func (a *A) GetMessage(p *param, r *result) error {
+func (a *A) GetMessage(p *Param, r *Result) error {
 	return nil
 }
 
-func (a *A) PostMessage(p *param, r *result) error {
+func (a *A) PostMessage(p *Param, r *Result) error {
 	return nil
 }
 
-func (a *A) PostB(p *param, r *result) error {
+func (a *A) PostB(p *Param, r *Result) error {
 	return nil
 }
 
 func TestHandle(t *testing.T) {
 	server := New()
 	server.Handle("/", &A{})
-
-	var c chan int
-
-	<-c
 }
 
 func printResult(v interface{}) string {

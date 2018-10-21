@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/dynamicgo/restrpc/param"
 	"github.com/dynamicgo/slf4go"
 
 	"github.com/julienschmidt/httprouter"
@@ -114,7 +115,9 @@ func (server *serverImpl) Handle(path string, service interface{}, middleware ..
 
 		handler := server.packageHandlers(server.createHandle(service, &method), middleware...)
 
-		server.router.Handler(httpMethod, path, handler)
+		name := strings.TrimPrefix(strings.ToLower(method.Name), strings.ToLower(httpMethod))
+
+		server.router.Handler(httpMethod, fmt.Sprintf("%s/%s", path, name), handler)
 
 		server.InfoF("[%s] find valid http %s method %s ", serviceT, httpMethod, method.Name)
 	}
@@ -183,5 +186,11 @@ func (server *serverImpl) writeResponse(w http.ResponseWriter, result interface{
 
 func (server *serverImpl) readParameter(r *http.Request, paramT reflect.Type) (reflect.Value, error) {
 
-	return reflect.New(paramT), nil
+	reader, err := param.ReadFromHTTPRequest(r)
+
+	if err != nil {
+		return reflect.Value{}, err
+	}
+
+	return param.Read(paramT, reader)
 }
