@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/dynamicgo/restrpc/param"
 	"github.com/dynamicgo/slf4go"
 
 	"github.com/julienschmidt/httprouter"
@@ -186,11 +185,5 @@ func (server *serverImpl) writeResponse(w http.ResponseWriter, result interface{
 
 func (server *serverImpl) readParameter(r *http.Request, paramT reflect.Type) (reflect.Value, error) {
 
-	reader, err := param.ReadFromHTTPRequest(r)
-
-	if err != nil {
-		return reflect.Value{}, err
-	}
-
-	return param.Read(paramT, reader)
+	return reflect.Value{}, nil
 }
