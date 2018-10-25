@@ -104,3 +104,23 @@ type arrayValidator struct {
 
 type mapValidator struct {
 }
+
+func (validator *numberValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+	return nil, nil
+}
+
+func (validator *structValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+	return nil, nil
+}
+
+func (validator *stringValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+	return nil, nil
+}
+
+func (validator *arrayValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+	return nil, nil
+}
+
+func (validator *mapValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+	return nil, nil
+}
