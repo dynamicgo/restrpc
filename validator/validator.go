@@ -177,6 +177,8 @@ func (validator *structValidator) Validate(reader Reader, paramT reflect.Type) (
 
 	mapValue := reflect.New(paramT)
 
+	mapValue = mapValue.Elem()
+
 	for i := 0; i < paramT.NumField(); i++ {
 		field := paramT.Field(i)
 
@@ -204,7 +206,27 @@ func (validator *structValidator) Validate(reader Reader, paramT reflect.Type) (
 			continue
 		}
 
-		mapValue.Field(i).Set(values[0])
+		fieldValue := mapValue.Field(i)
+
+		value := values[0]
+
+		fieldType := field.Type
+
+		if field.Type.Kind() == reflect.Ptr {
+
+			fieldType = fieldType.Elem()
+
+			if value.Type().Kind() != reflect.Ptr {
+				value = value.Addr()
+			}
+
+		}
+
+		if value.Type().Kind() != fieldType.Kind() {
+			value = value.Convert(field.Type)
+		}
+
+		fieldValue.Set(value)
 	}
 
 	return []reflect.Value{mapValue}, nil

@@ -1,14 +1,29 @@
 package server
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
 
+	"github.com/dynamicgo/xerrors/apierr"
+
+	"github.com/dynamicgo/xerrors"
+
+	"github.com/dynamicgo/restrpc/validator"
+
 	"github.com/dynamicgo/slf4go"
 
 	"github.com/julienschmidt/httprouter"
+)
+
+// Errors
+var (
+	ErrUnsupportContentType = errors.New("unsupport content-type")
+	ErrInternal             = apierr.New(-1, "INNER_ERROR")
 )
 
 var methods = map[string]string{
@@ -23,6 +38,9 @@ var methods = map[string]string{
 	"Trace":   http.MethodTrace,
 }
 
+// R Response type
+type R map[string]interface{}
+
 // Middleware server middleware
 type Middleware func(resp http.ResponseWriter, req *http.Request, next http.Handler)
 
@@ -30,6 +48,8 @@ type Middleware func(resp http.ResponseWriter, req *http.Request, next http.Hand
 type Server interface {
 	Handle(path string, service interface{}, middleware ...Middleware) Server
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
+	Success(w http.ResponseWriter, result interface{}) error
+	Fail(w http.ResponseWriter, code int, cause error) error
 }
 
 type middlewareHandler struct {
@@ -157,14 +177,16 @@ func (server *serverImpl) createHandle(service interface{}, method *reflect.Meth
 		input, err := server.readParameter(r, method.Type.In(1))
 
 		if err != nil {
-			server.writeResponse(w, nil, err)
+			server.writeResponse(w, nil, http.StatusInternalServerError, err)
 			return
 		}
+
+		output := reflect.New(method.Type.In(2))
 
 		params := []reflect.Value{
 			serviceValue,
 			input,
-			reflect.New(method.Type.In(2)),
+			output,
 		}
 
 		results := method.Func.Call(params)
@@ -175,15 +197,82 @@ func (server *serverImpl) createHandle(service interface{}, method *reflect.Meth
 			panic(fmt.Sprintf("filter service %s RESTful method %s error,result must be error", reflect.TypeOf(service), method.Name))
 		}
 
-		server.writeResponse(w, results[0].Interface(), err)
+		if err != nil {
+			server.writeResponse(w, nil, http.StatusInternalServerError, err)
+		} else {
+			server.writeResponse(w, R{
+				"result": output.Interface(),
+			}, http.StatusOK, nil)
+		}
+
 	})
 }
 
-func (server *serverImpl) writeResponse(w http.ResponseWriter, result interface{}, err error) {
+func (server *serverImpl) writeResponse(w http.ResponseWriter, r R, code int, err error) error {
 
+	if err != nil {
+		apiErr := apierr.As(err, ErrInternal)
+		r["code"] = apiErr.Code()
+		r["errmsg"] = apiErr.Error()
+	}
+
+	buff, err := json.Marshal(r)
+
+	if err != nil {
+		return xerrors.Wrapf(err, "marshal response %v err %s", r, err)
+	}
+
+	w.WriteHeader(code)
+	_, err = w.Write(buff)
+
+	if err != nil {
+		return xerrors.Wrapf(err, "write response err")
+	}
+
+	return nil
+}
+
+func (server *serverImpl) Success(w http.ResponseWriter, result interface{}) error {
+	return server.writeResponse(w, R{
+		"result": result,
+	}, http.StatusOK, nil)
+}
+func (server *serverImpl) Fail(w http.ResponseWriter, code int, cause error) error {
+	return server.writeResponse(w, nil, code, cause)
 }
 
 func (server *serverImpl) readParameter(r *http.Request, paramT reflect.Type) (reflect.Value, error) {
 
-	return reflect.Value{}, nil
+	var reader validator.Reader
+
+	if r.Method == http.MethodGet || r.Method == http.MethodDelete {
+		reader = validator.NewQueryReader(r.URL.Query())
+	} else {
+
+		contentType := r.Header.Get("Content-type")
+
+		if contentType != "application/json" {
+			return reflect.Value{}, xerrors.Wrapf(ErrUnsupportContentType, "restrpc only support application/json content-type")
+		}
+
+		buff, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			return reflect.Value{}, xerrors.Wrapf(err, "unable read request body from %s", r.RequestURI)
+		}
+
+		reader, err = validator.NewJSONReader(buff)
+
+		if err != nil {
+			return reflect.Value{}, xerrors.Wrapf(err, "parse request %s json body error", r.RequestURI)
+		}
+	}
+
+	values, err := validator.Validate(reader, paramT)
+
+	if err != nil {
+		return reflect.Value{}, err
+	}
+
+	return values[0], nil
 }

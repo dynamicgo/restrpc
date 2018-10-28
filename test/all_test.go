@@ -1,9 +1,11 @@
-package server
+package test
 
 import (
 	"encoding/json"
 	"net/http"
 	"testing"
+
+	"github.com/dynamicgo/restrpc/server"
 )
 
 type A struct {
@@ -28,7 +30,7 @@ func (a *A) PostB(p *Param, r *Result) error {
 }
 
 func init() {
-	server := New()
+	server := server.New()
 	server.Handle("/", &A{})
 	http.ListenAndServe(":8080", server)
 }
