@@ -23,6 +23,7 @@ const MetadataTag = "rest"
 
 // Metadata .
 type Metadata struct {
+	Skipped  bool   // skipped field
 	Required bool   // required parameter flag
 	Name     string // parameter name
 }
@@ -41,6 +42,8 @@ func ParseMetadata(tag string) *Metadata {
 		switch token {
 		case "required":
 			metadata.Required = true
+		case "-":
+			metadata.Skipped = true
 		default:
 			metadata.Name = token
 		}
