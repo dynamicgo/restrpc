@@ -136,9 +136,11 @@ func (server *serverImpl) Handle(path string, service interface{}, middleware ..
 
 		name := strings.TrimPrefix(strings.ToLower(method.Name), strings.ToLower(httpMethod))
 
-		server.router.Handler(httpMethod, fmt.Sprintf("%s/%s", path, name), handler)
+		methodPath := fmt.Sprintf("%s/%s", path, name)
 
-		server.InfoF("[%s] find valid http %s method %s ", serviceT, httpMethod, method.Name)
+		server.router.Handler(httpMethod, methodPath, handler)
+
+		server.InfoF("[%s] find valid http %s method %s register handle %s", serviceT, httpMethod, method.Name, methodPath)
 	}
 
 	return server
