@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/dynamicgo/restrpc"
 	"github.com/dynamicgo/xerrors/apierr"
 
 	"github.com/dynamicgo/xerrors"
@@ -23,7 +24,6 @@ import (
 // Errors
 var (
 	ErrUnsupportContentType = errors.New("unsupport content-type")
-	ErrInternal             = apierr.New(-1, "INNER_ERROR")
 )
 
 var methods = map[string]string{
@@ -213,7 +213,7 @@ func (server *serverImpl) createHandle(service interface{}, method *reflect.Meth
 func (server *serverImpl) writeResponse(w http.ResponseWriter, r R, code int, err error) error {
 
 	if err != nil {
-		apiErr := apierr.As(err, ErrInternal)
+		apiErr := apierr.As(err, restrpc.ErrInternal)
 		r["code"] = apiErr.Code()
 		r["errmsg"] = apiErr.Error()
 	}
@@ -245,7 +245,7 @@ func (server *serverImpl) Fail(w http.ResponseWriter, code int, cause error) err
 
 func (server *serverImpl) readParameter(r *http.Request, paramT reflect.Type) (reflect.Value, error) {
 
-	var reader validator.Reader
+	var reader restrpc.Reader
 
 	if r.Method == http.MethodGet || r.Method == http.MethodDelete {
 		reader = validator.NewQueryReader(r.URL.Query())

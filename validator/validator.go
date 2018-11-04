@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dynamicgo/restrpc"
 	"github.com/dynamicgo/xerrors"
 )
 
@@ -52,28 +53,14 @@ func ParseMetadata(tag string) *Metadata {
 	return metadata
 }
 
-// Validator .
-type Validator interface {
-	Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error)
-}
-
-// Reader parameter reader
-type Reader interface {
-	Search(key string) ([]string, error)
-	Get() ([]string, error)
-	Range(func(key string, reader Reader) error) error
-	Path() string // reader path
-	Reader(key string) Reader
-}
-
 // Validate validate parameter with reflect type and reader
-func Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+func Validate(reader restrpc.Reader, paramT reflect.Type) ([]reflect.Value, error) {
 
 	if paramT.Kind() == reflect.Ptr {
 		paramT = paramT.Elem()
 	}
 
-	var validator Validator
+	var validator restrpc.Validator
 
 	switch paramT.Kind() {
 	case reflect.Int, reflect.Int8,
@@ -96,7 +83,7 @@ func Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
 	default:
 		if paramT.Implements(reflect.TypeOf(&validator).Elem()) {
 			value := reflect.New(paramT)
-			validator = value.Interface().(Validator)
+			validator = value.Interface().(restrpc.Validator)
 		}
 	}
 
@@ -125,7 +112,7 @@ type arrayValidator struct {
 type mapValidator struct {
 }
 
-func (validator *boolValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+func (validator *boolValidator) Validate(reader restrpc.Reader, paramT reflect.Type) ([]reflect.Value, error) {
 
 	params, err := reader.Get()
 
@@ -149,7 +136,7 @@ func (validator *boolValidator) Validate(reader Reader, paramT reflect.Type) ([]
 	return values, nil
 }
 
-func (validator *numberValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+func (validator *numberValidator) Validate(reader restrpc.Reader, paramT reflect.Type) ([]reflect.Value, error) {
 
 	params, err := reader.Get()
 
@@ -173,7 +160,7 @@ func (validator *numberValidator) Validate(reader Reader, paramT reflect.Type) (
 	return values, nil
 }
 
-func (validator *structValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+func (validator *structValidator) Validate(reader restrpc.Reader, paramT reflect.Type) ([]reflect.Value, error) {
 
 	mapValue := reflect.New(paramT)
 
@@ -232,7 +219,7 @@ func (validator *structValidator) Validate(reader Reader, paramT reflect.Type) (
 	return []reflect.Value{mapValue}, nil
 }
 
-func (validator *stringValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+func (validator *stringValidator) Validate(reader restrpc.Reader, paramT reflect.Type) ([]reflect.Value, error) {
 	params, err := reader.Get()
 
 	if err != nil {
@@ -249,14 +236,14 @@ func (validator *stringValidator) Validate(reader Reader, paramT reflect.Type) (
 	return values, nil
 }
 
-func (validator *arrayValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+func (validator *arrayValidator) Validate(reader restrpc.Reader, paramT reflect.Type) ([]reflect.Value, error) {
 
 	paramT = paramT.Elem()
 
 	return Validate(reader, paramT)
 }
 
-func (validator *mapValidator) Validate(reader Reader, paramT reflect.Type) ([]reflect.Value, error) {
+func (validator *mapValidator) Validate(reader restrpc.Reader, paramT reflect.Type) ([]reflect.Value, error) {
 	keyT := paramT.Key()
 
 	if keyT.Kind() != reflect.String {
@@ -269,7 +256,7 @@ func (validator *mapValidator) Validate(reader Reader, paramT reflect.Type) ([]r
 
 	path := reader.Path()
 
-	err := reader.Range(func(key string, reader Reader) error {
+	err := reader.Range(func(key string, reader restrpc.Reader) error {
 
 		values, err := Validate(reader, valueT)
 

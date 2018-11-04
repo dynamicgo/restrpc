@@ -133,7 +133,7 @@ func (service *serviceImpl) Get(checkedURL string, args interface{}, reply inter
 }
 
 func (service *serviceImpl) Post(checkedURL string, args interface{}, reply interface{}, options ...Option) error {
-	r := resty.R().SetBody(args).
+	r := resty.R().SetBody(service.args2JSON(args)).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json")
 
@@ -169,7 +169,7 @@ func (service *serviceImpl) Delete(checkedURL string, args interface{}, reply in
 }
 
 func (service *serviceImpl) Put(checkedURL string, args interface{}, reply interface{}, options ...Option) error {
-	r := resty.R().SetBody(args).
+	r := resty.R().SetBody(service.args2JSON(args)).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json")
 
@@ -237,4 +237,8 @@ func (service *serviceImpl) checkURL(s string) (string, error) {
 
 func (service *serviceImpl) args2Map(args interface{}) map[string]string {
 	return nil
+}
+
+func (service *serviceImpl) args2JSON(args interface{}) string {
+	return ""
 }

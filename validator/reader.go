@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/dynamicgo/restrpc"
 	"github.com/dynamicgo/xerrors"
 
 	"github.com/Jeffail/gabs"
@@ -15,7 +16,7 @@ type queryReader struct {
 }
 
 // NewQueryReader .
-func NewQueryReader(values url.Values) Reader {
+func NewQueryReader(values url.Values) restrpc.Reader {
 	return &queryReader{
 		values: values,
 	}
@@ -37,7 +38,8 @@ func (reader *queryReader) Get() ([]string, error) {
 
 	return values, nil
 }
-func (reader *queryReader) Range(f func(key string, reader Reader) error) error {
+
+func (reader *queryReader) Range(f func(key string, reader restrpc.Reader) error) error {
 
 	path := strings.Join(reader.path, ".")
 
@@ -60,7 +62,7 @@ func (reader *queryReader) Path() string {
 	return strings.Join(reader.path, ".")
 }
 
-func (reader *queryReader) Reader(key string) Reader {
+func (reader *queryReader) Reader(key string) restrpc.Reader {
 	return &queryReader{
 		path:   append(reader.path, key),
 		values: reader.values,
@@ -73,7 +75,7 @@ type jsonReader struct {
 }
 
 // NewJSONReader .
-func NewJSONReader(content []byte) (Reader, error) {
+func NewJSONReader(content []byte) (restrpc.Reader, error) {
 	container, err := gabs.ParseJSON(content)
 
 	if err != nil {
@@ -101,7 +103,7 @@ func (reader *jsonReader) Get() ([]string, error) {
 
 	return []string{value}, nil
 }
-func (reader *jsonReader) Range(f func(key string, reader Reader) error) error {
+func (reader *jsonReader) Range(f func(key string, reader restrpc.Reader) error) error {
 
 	path := strings.Join(reader.path, ".")
 
@@ -128,7 +130,7 @@ func (reader *jsonReader) Path() string {
 	return strings.Join(reader.path, ".")
 }
 
-func (reader *jsonReader) Reader(key string) Reader {
+func (reader *jsonReader) Reader(key string) restrpc.Reader {
 	return &jsonReader{
 		path:      append(reader.path, key),
 		container: reader.container,
